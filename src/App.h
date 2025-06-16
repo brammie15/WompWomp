@@ -1,0 +1,35 @@
+#ifndef APP_H
+#define APP_H
+#include <cstdint>
+#include <memory>
+
+#include "Core/Window.h"
+#include "Rendering/Renderer.h"
+#include "Rendering/WompRenderer.h"
+
+
+class App {
+public:
+    static constexpr uint32_t WIDTH = 1200;
+    static constexpr uint32_t HEIGHT = 1000;
+
+    App();
+    ~App();
+
+    App(const App& other) = delete;
+    App(App&& other) noexcept = delete;
+    App& operator=(const App& other) = delete;
+    App& operator=(App&& other) noexcept = delete;
+
+    void run();
+
+private:
+    std::unique_ptr<womp::Window> m_window{};
+    std::unique_ptr<womp::Renderer> m_renderer{};
+    std::unique_ptr<womp::WompRenderer> m_wompRenderer{};
+
+};
+
+
+
+#endif //APP_H
