@@ -13,6 +13,7 @@ set(SOURCE_FILES
         ${SRC_DIR}/Chalk.h
 
         ${SRC_DIR}/Core/Window.h ${SRC_DIR}/Core/Window.cpp
+        ${SRC_DIR}/Core/WompMath.h ${SRC_DIR}/Core/WompMath.cpp
 
         ${SRC_DIR}/Rendering/Device.h ${SRC_DIR}/Rendering/Device.cpp
         ${SRC_DIR}/Rendering/Renderer.h ${SRC_DIR}/Rendering/Renderer.cpp

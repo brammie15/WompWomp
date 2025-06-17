@@ -197,7 +197,7 @@ void womp::Renderer::recreateSwapChain() {
 
     vkDeviceWaitIdle(m_device->GetVkDevice());
 
-    freeCommandBuffers();  // If required
-    m_swapChain = std::make_unique<Swapchain>(*m_device, VkExtent2D{static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
-    createCommandBuffers(); // If required
+    // freeCommandBuffers();  // If required
+    m_swapChain = std::make_unique<Swapchain>(*m_device, VkExtent2D{static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, m_swapChain.get());
+    // createCommandBuffers(); // If required
 }

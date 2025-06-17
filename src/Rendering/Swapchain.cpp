@@ -15,7 +15,7 @@ namespace womp {
             .set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
             .add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-        if (previous) {
+        if (previous && previous->m_swapchain != VK_NULL_HANDLE) {
             builder.set_old_swapchain(previous->m_swapchain);
         }
 
@@ -39,10 +39,6 @@ namespace womp {
 
         createDepthResources();
         createSyncObjects();
-
-        if (previous) {
-            vkb::destroy_swapchain(previous->m_swapchain);
-        }
     }
 
     Swapchain::~Swapchain() {

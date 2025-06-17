@@ -3,31 +3,34 @@
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
 
+layout(set = 0, binding = 0) uniform screenUniforms {
+    vec2 screenSize;
+} ubo;
+
 layout(push_constant) uniform PushConstants {
-    vec4 position; // x, y, width, height
+    vec4 srcRect;   // xy = UV offset, zw = UV size
+    vec4 dstRect;   // xy = screen position (pixels), zw = size (pixels)
     float rotation;
+    vec4 color;
 } push;
 
 layout(location = 0) out vec2 fragTexCoord;
 
 void main() {
-    // Normalized position in [-0.5, 0.5] space
-    vec2 centeredPos = inPosition.xy * push.position.zw;
+    vec2 localPos = inPosition.xy * push.dstRect.zw;
 
-    // Apply rotation
     float c = cos(push.rotation);
     float s = sin(push.rotation);
-    mat2 rotationMatrix = mat2(c, -s, s, c);
+    mat2 rot = mat2(c, -s, s, c);
+    vec2 rotatedPos = rot * localPos;
 
-    vec2 rotatedPos = rotationMatrix * centeredPos;
+    vec2 screenPos = push.dstRect.xy + rotatedPos;
 
-    // Offset by screen position
-    vec2 screenPos = push.position.xy + rotatedPos;
-
-    // Convert to clip space
-    vec2 clipPos = (screenPos / vec2(1200.0, 1000.0)) * 2.0 - 1.0;
-    clipPos.y = -clipPos.y;
+    // Normalize to NDC
+    vec2 clipPos = (screenPos / ubo.screenSize) * 2.0 - 1.0;
+    clipPos.y = -clipPos.y; // Flip Y for Vulkan
 
     gl_Position = vec4(clipPos, 0.0, 1.0);
-    fragTexCoord = inTexCoord;
+
+    fragTexCoord = push.srcRect.xy + inTexCoord * push.srcRect.zw;
 }
