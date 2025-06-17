@@ -1,5 +1,12 @@
 #include "Image.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
+
+#include "Buffer.h"
+#include "Rendering/DebugLabel.h"
+#include "Rendering/stb_image.h"
+
 womp::Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, bool createView, bool createSampler, VkFilter filter)
     : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE),
       m_format{format}, m_imageView(VK_NULL_HANDLE) {
@@ -11,11 +18,39 @@ womp::Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsag
         createImageSampler(filter, VK_SAMPLER_ADDRESS_MODE_REPEAT);
     }
     m_extent = size;
-
 }
 
-womp::Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage):
-    m_device{device}, m_image(existingImage), m_allocation(VK_NULL_HANDLE), m_extent{size}, m_format{format}, m_imageView(VK_NULL_HANDLE) {
+womp::Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter)
+    : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_format{format}, m_imageView(VK_NULL_HANDLE) {
+    uint8_t* pixels = nullptr;
+    VkDeviceSize imageSize{};
+    int texWidth, texHeight, texChannels;
+    pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    if (!pixels) {
+        std::cerr << "Failed to load texture image!" << std::endl;
+        pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    }
+    m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+    imageSize = texWidth * texHeight * 4;
+
+    Buffer stagingBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+    stagingBuffer.copyTo(pixels, imageSize);
+
+    stbi_image_free(pixels);
+
+    createImage(m_extent, 1, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, memoryUsage);
+    createImageView(format);
+
+    device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+    copyToBuffer(stagingBuffer, m_extent);
+    createImageSampler(filter, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+    DebugLabel::NameImage(m_image, filename);
+}
+
+
+womp::Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage): m_device{device}, m_image(existingImage), m_allocation(VK_NULL_HANDLE), m_extent{size}, m_format{format}, m_imageView(VK_NULL_HANDLE) {
     assert(existingImage != VK_NULL_HANDLE && "Swapchain image is null!");
     createImageView(format);
     m_isSwapchainImage = true; // Mark this image as a swapchain image
@@ -40,8 +75,7 @@ void womp::Image::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLa
     if (HasDepth()) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-    }
-    else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    } else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = 1;
@@ -52,8 +86,8 @@ void womp::Image::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLa
 
     vkCmdPipelineBarrier(
         commandBuffer,
-        srcStageMask,  // Use provided source stage mask
-        dstStageMask,  // Use provided destination stage mask
+        srcStageMask, // Use provided source stage mask
+        dstStageMask, // Use provided destination stage mask
         0,
         0, nullptr,
         0, nullptr,
@@ -70,6 +104,63 @@ VkDescriptorImageInfo womp::Image::descriptorInfo() {
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     return imageInfo;
+}
+
+void womp::Image::copyToBuffer(Buffer& buffer, VkExtent2D size) const {
+    const VkCommandBuffer commandBuffer = m_device.beginSingleTimeCommands();
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+        size.width,
+        size.height,
+        1
+    };
+
+    vkCmdCopyBufferToImage(
+        commandBuffer,
+        buffer.getBuffer(),
+        m_image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region
+    );
+
+    m_device.endSingleTimeCommands(commandBuffer);
+}
+
+bool womp::Image::HasStencil() const {
+    switch (m_format)
+    {
+        case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        case VK_FORMAT_D24_UNORM_S8_UINT:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool womp::Image::HasDepth() const {
+    switch (m_format)
+    {
+        case VK_FORMAT_D16_UNORM:
+        case VK_FORMAT_X8_D24_UNORM_PACK32:
+        case VK_FORMAT_D32_SFLOAT:
+        case VK_FORMAT_D24_UNORM_S8_UINT:
+        case VK_FORMAT_D32_SFLOAT_S8_UINT:
+            return true;
+        default:
+            return false;
+    }
 }
 
 void womp::Image::createImage(VkExtent2D size, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -91,7 +182,10 @@ void womp::Image::createImage(VkExtent2D size, uint32_t miplevels, VkFormat form
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = memoryUsage;
 
-    if (vmaCreateImage(m_device.getAllocator(), &imageInfo, &allocInfo, &m_image, &m_allocation, nullptr) != VK_SUCCESS) {
+
+    auto result = vmaCreateImage(m_device.getAllocator(), &imageInfo, &allocInfo, &m_image, &m_allocation, nullptr);
+
+    if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create image with VMA!");
     }
 }

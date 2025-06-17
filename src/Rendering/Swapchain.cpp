@@ -5,7 +5,7 @@
 
 namespace womp {
     Swapchain::Swapchain(Device& deviceRef, VkExtent2D windowExtent, Swapchain* previous)
-        : m_device(deviceRef), m_windowExtent{windowExtent} {
+        : m_device(deviceRef), m_windowExtent{windowExtent}, m_swapchainExtent{windowExtent} {
 
         vkb::SwapchainBuilder swapchainBuilder{m_device.GetVkbDevice()};
 
@@ -81,7 +81,7 @@ namespace womp {
             VK_TRUE,
             std::numeric_limits<uint64_t>::max());
 
-        VkResult result = vkAcquireNextImageKHR(
+        const VkResult result = vkAcquireNextImageKHR(
             m_device.GetVkDevice(),
             m_swapchain,
             std::numeric_limits<uint64_t>::max(),
@@ -139,15 +139,16 @@ namespace womp {
         return result;
     }
 
+
     void Swapchain::createDepthResources() {
         m_depthImages.clear();
-        VkFormat depthFormat = findDepthFormat();
+        m_swapChainDepthFormat = findDepthFormat();
 
         for (size_t i = 0; i < imageCount(); i++) {
             auto depthImage = std::make_unique<Image>(
                 m_device,
-                m_swapchain.extent,
-                depthFormat,
+                m_swapchainExtent,
+                m_swapChainDepthFormat,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY);
             m_depthImages.push_back(std::move(depthImage));
@@ -173,21 +174,6 @@ namespace womp {
                 vkCreateFence(m_device.GetVkDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
-        }
-    }
-
-    void Swapchain::createDepthImages() {
-        m_depthImages.clear();
-        m_swapChainDepthFormat = findDepthFormat();
-
-        for (size_t i = 0; i < imageCount(); i++) {
-            auto depthImage = std::make_unique<womp::Image>(
-                m_device,
-                m_swapchainExtent,
-                m_swapChainDepthFormat,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VMA_MEMORY_USAGE_GPU_ONLY);
-            m_depthImages.push_back(std::move(depthImage));
         }
     }
 

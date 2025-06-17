@@ -9,6 +9,9 @@ womp::Renderer::Renderer(womp::Window& windowRef): m_window{windowRef} {
 }
 
 womp::Renderer::~Renderer() {
+    freeCommandBuffers();
+    m_swapChain.reset();
+    m_device.reset();
 }
 
 void womp::Renderer::initialise() {
@@ -97,8 +100,8 @@ void womp::Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) con
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
         .imageView = m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex)).GetImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-        // .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        // .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = clearValues[1],
     };
@@ -174,7 +177,27 @@ void womp::Renderer::createCommandBuffers() {
 }
 
 void womp::Renderer::freeCommandBuffers() {
+    vkFreeCommandBuffers(
+           m_device->GetVkDevice(),
+           m_device->getCommandPool(),
+           static_cast<uint32_t>(commandBuffers.size()),
+           commandBuffers.data()
+       );
+    commandBuffers.clear();
 }
 
 void womp::Renderer::recreateSwapChain() {
+    int width = m_window.getWidth();
+    int height = m_window.getHeight();
+    while (width == 0 || height == 0) {
+        width = m_window.getWidth();
+        height = m_window.getHeight();
+        glfwWaitEvents(); // or equivalent
+    }
+
+    vkDeviceWaitIdle(m_device->GetVkDevice());
+
+    freeCommandBuffers();  // If required
+    m_swapChain = std::make_unique<Swapchain>(*m_device, VkExtent2D{static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
+    createCommandBuffers(); // If required
 }

@@ -35,13 +35,12 @@ namespace womp {
         [[nodiscard]] Image& GetImage(int index) const;
         [[nodiscard]] Image& GetDepthImage(int index) const;
 
-        const vkb::Swapchain& GetVkbSwapchain() const { return m_swapchain; }
+        [[nodiscard]] const vkb::Swapchain& GetVkbSwapchain() const { return m_swapchain; }
 
     private:
         void createDepthResources();
         void createSyncObjects();
 
-        void createDepthImages();
         [[nodiscard]] VkFormat findDepthFormat() const;
 
         Device& m_device;

@@ -58,14 +58,6 @@ namespace womp {
             return m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex));
         }
 
-        // void drawTexture(VkCommandBuffer commandBuffer, const Image& textureImage, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
-        //     assert(m_isFrameStarted && "Cannot draw texture when frame not in progress");
-        //     textureImage.TransitionImageLayout(commandBuffer, imageLayout);
-        //     DebugLabel::BeginCmdLabel(commandBuffer, "DrawTexture");
-        //     // Add your drawing commands here
-        //     DebugLabel::EndCmdLabel(commandBuffer);
-        // }
-
     private:
         void createCommandBuffers();
         void freeCommandBuffers();

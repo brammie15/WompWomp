@@ -1,6 +1,8 @@
 #ifndef VBUFFER_H
 #define VBUFFER_H
 
+#include <memory>
+
 #include "Rendering/Device.h"
 
 namespace womp {
@@ -23,13 +25,17 @@ namespace womp {
         [[nodiscard]] VmaAllocationInfo GetAllocationInfo() const { return m_allocationInfo; }
         [[nodiscard]] size_t GetSize() const { return m_size; }
         [[nodiscard]] bool isMapped() const { return m_data != nullptr; }
+        void copyToBuffer(Buffer* dstBuffer, uint32_t size);
 
     private:
+        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, bool mappable);
+
         Device& m_device;
         VkBuffer m_buffer = VK_NULL_HANDLE;
         VmaAllocation m_allocation = VK_NULL_HANDLE;
         VmaAllocationInfo m_allocationInfo{};
 
+        bool m_mappedViaCreateFlag = false;
         void* m_data = nullptr;
         VkDeviceSize m_size = 0;
     };

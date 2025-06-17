@@ -3,6 +3,7 @@
 #include <iostream>
 
 #define VMA_IMPLEMENTATION
+#include <fstream>
 #include <vma/vk_mem_alloc.h>
 
 #include "DebugLabel.h"
@@ -19,6 +20,19 @@ womp::Device::Device(womp::Window& window) : m_window(window) {
 }
 
 womp::Device::~Device() {
+    char* statsString;
+    vmaBuildStatsString(m_allocator, &statsString, VK_TRUE);  // VK_TRUE = detailed
+
+    std::ofstream outFile("vma_stats.txt");
+    if (outFile.is_open()) {
+        outFile << "=== VMA STATS ===\n" << statsString;
+        outFile.close();
+    } else {
+        std::cerr << "Failed to open vma_stats.txt for writing.\n";
+    }
+
+    vmaFreeStatsString(m_allocator, statsString);
+
     vmaDestroyAllocator(m_allocator); //Thanks thalia <3
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 
@@ -40,6 +54,68 @@ VkFormat womp::Device::FindSupportedFormat(const std::vector<VkFormat>& candidat
         }
     }
     throw std::runtime_error("failed to find supported format!");
+}
+
+void womp::Device::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+    const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = mipLevels;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = 0;
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    endSingleTimeCommands(commandBuffer);
+}
+
+VkCommandBuffer womp::Device::beginSingleTimeCommands() const {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = m_commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(m_device, &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    return commandBuffer;
+}
+
+void womp::Device::endSingleTimeCommands(VkCommandBuffer commandBuffer) const {
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(m_graphicsQueue);
+
+    vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
 }
 
 void womp::Device::CreateDevice() {

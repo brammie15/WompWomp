@@ -25,9 +25,9 @@ public:
 
 private:
     std::unique_ptr<womp::Window> m_window{};
-    std::unique_ptr<womp::Renderer> m_renderer{};
     std::unique_ptr<womp::WompRenderer> m_wompRenderer{};
 
+    womp::TextureHandle m_textureHandle{};
 };
 
 

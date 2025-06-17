@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "Buffer.h"
 #include "ImageView.h"
 #include "Sampler.h"
 #include "Rendering/Device.h"
@@ -20,6 +21,7 @@ namespace womp {
             bool createSampler = true,
             VkFilter filter = VK_FILTER_LINEAR
         );
+        Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter);
 
         Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage);
         ~Image();
@@ -31,40 +33,16 @@ namespace womp {
 
         VkExtent2D GetExtent() const { return m_extent; }
 
-
         [[nodiscard]] VkImageLayout GetCurrentLayout() const { return m_imageLayout; }
 
-        void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout,
-                                 VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+        void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 
         VkDescriptorImageInfo descriptorInfo();
+        void copyToBuffer(Buffer& buffer, VkExtent2D size) const;
 
 
-        [[nodiscard]] bool HasStencil() const {
-            switch (m_format)
-            {
-                case VK_FORMAT_D32_SFLOAT_S8_UINT:
-                case VK_FORMAT_D24_UNORM_S8_UINT:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        [[nodiscard]] bool HasDepth() const {
-            switch (m_format)
-            {
-                case VK_FORMAT_D16_UNORM:
-                case VK_FORMAT_X8_D24_UNORM_PACK32:
-                case VK_FORMAT_D32_SFLOAT:
-                case VK_FORMAT_D24_UNORM_S8_UINT:
-                case VK_FORMAT_D32_SFLOAT_S8_UINT:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
+        [[nodiscard]] bool HasStencil() const;
+        [[nodiscard]] bool HasDepth() const;
 
     private:
         void createImage(VkExtent2D size, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);

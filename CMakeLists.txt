@@ -19,7 +19,6 @@ set(SOURCE_FILES
         ${SRC_DIR}/Rendering/Swapchain.h ${SRC_DIR}/Rendering/Swapchain.cpp
         ${SRC_DIR}/Rendering/Pipeline.h ${SRC_DIR}/Rendering/Pipeline.cpp
         ${SRC_DIR}/Rendering/WompRenderer.h ${SRC_DIR}/Rendering/WompRenderer.cpp
-        ${SRC_DIR}/Rendering/Buffer.h ${SRC_DIR}/Rendering/Buffer.cpp
 
         ${SRC_DIR}/Rendering/DebugLabel.h ${SRC_DIR}/Rendering/DebugLabel.cpp
 
@@ -31,6 +30,7 @@ set(SOURCE_FILES
         ${SRC_DIR}/Rendering/Resources/Image.h ${SRC_DIR}/Rendering/Resources/Image.cpp
         ${SRC_DIR}/Rendering/Resources/ImageView.h ${SRC_DIR}/Rendering/Resources/ImageView.cpp
         ${SRC_DIR}/Rendering/Resources/Sampler.h ${SRC_DIR}/Rendering/Resources/Sampler.cpp
+        ${SRC_DIR}/Rendering/Resources/Buffer.h ${SRC_DIR}/Rendering/Resources/Buffer.cpp
 
 )
 

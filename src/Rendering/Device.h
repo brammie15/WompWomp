@@ -4,6 +4,11 @@
 #include "VkBootstrap.h"
 #include "Core/Window.h"
 
+#define VMA_DEBUG_LOGGING 1             // Logs every allocation/deallocation
+#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1 // Fills new allocations with a pattern
+#define VMA_DEBUG_MARGIN 16             // Adds margin before/after allocations
+#define VMA_DEBUG_DETECT_CORRUPTION 1   // Detects buffer overruns/underruns
+
 #include <vma/vk_mem_alloc.h>
 
 namespace womp {
@@ -20,6 +25,12 @@ namespace womp {
 
         [[nodiscard]] VkCommandPool getCommandPool() const { return m_commandPool; }
         [[nodiscard]] VmaAllocator getAllocator() const { return m_allocator; }
+
+        void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+
+        VkCommandBuffer beginSingleTimeCommands() const;
+
+        void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
 
     private:
         void CreateDevice();
