@@ -15,7 +15,7 @@ App::~App() {
 
 void App::run() {
 
-    m_textureHandle = m_wompRenderer->createTexture("resources/kobeSilly.png");
+    m_textureHandle = m_wompRenderer->createTexture("../resources/kobeSilly.png");
 
     int counter = 0;
 

@@ -3,9 +3,9 @@
 #include <functional>
 #include <memory>
 
-#include "Device.h"
-#include "Swapchain.h"
-#include "../Core/Window.h"
+#include "../../src/Rendering/Device.h"
+#include "../../src/Rendering/Swapchain.h"
+#include "Window.h"
 
 
 namespace womp {

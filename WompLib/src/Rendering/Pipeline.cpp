@@ -13,6 +13,12 @@ namespace womp {
         CreateGraphicsPipeline(vertPath, fragPath, configInfo);
     }
 
+    Pipeline::Pipeline(Device& device, const uint8_t* vertCode, size_t vertSize, const uint8_t* fragCode, size_t fragSize,
+                       const PipelineConfigInfo& configInfo)
+        : m_device(device) {
+        CreateGraphicsPipeline(vertCode, vertSize, fragCode, fragSize, configInfo);
+    }
+
     Pipeline::~Pipeline() {
         vkDestroyShaderModule(m_device.GetVkDevice(), m_vertShaderModule, nullptr);
         vkDestroyShaderModule(m_device.GetVkDevice(), m_fragShaderModule, nullptr);
@@ -213,6 +219,77 @@ namespace womp {
         pipelineInfo.renderPass = nullptr;
         // pipelineInfo.subpass = nullptr;
 
+        pipelineInfo.basePipelineIndex = -1;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+        if (vkCreateGraphicsPipelines(m_device.GetVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS) {
+            throw std::runtime_error("Can't make pipeline!");
+        }
+    }
+
+    void Pipeline::CreateGraphicsPipeline(const unsigned char* vertCode, size_t vertSize,
+                                          const unsigned char* fragCode, size_t fragSize,
+                                          const PipelineConfigInfo& configInfo) {
+        assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "no pipelineLayout provided in configInfo");
+
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
+        if (vertCode && vertSize > 0) {
+            std::vector<char> vertVec(reinterpret_cast<const char*>(vertCode), reinterpret_cast<const char*>(vertCode + vertSize));
+            CreateShaderModule(vertVec, &m_vertShaderModule);
+
+            VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+            vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+            vertShaderStageInfo.module = m_vertShaderModule;
+            vertShaderStageInfo.pName = "main";
+
+            shaderStages.push_back(vertShaderStageInfo);
+        }
+
+        if (fragCode && fragSize > 0) {
+            std::vector<char> fragVec(reinterpret_cast<const char*>(fragCode), reinterpret_cast<const char*>(fragCode + fragSize));
+            CreateShaderModule(fragVec, &m_fragShaderModule);
+
+            VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+            fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            fragShaderStageInfo.module = m_fragShaderModule;
+            fragShaderStageInfo.pName = "main";
+
+            shaderStages.push_back(fragShaderStageInfo);
+        }
+
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(configInfo.vertexAttributeDescriptions.size());
+        vertexInputInfo.pVertexAttributeDescriptions = configInfo.vertexAttributeDescriptions.data();
+        vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(configInfo.vertexBindingDescriptions.size());
+        vertexInputInfo.pVertexBindingDescriptions = configInfo.vertexBindingDescriptions.data();
+
+        VkGraphicsPipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.pStages = shaderStages.data();
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
+        pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
+        pipelineInfo.pViewportState = &configInfo.viewportInfo;
+        pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
+        pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
+        pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
+        pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
+        pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
+
+        VkPipelineRenderingCreateInfoKHR renderingInfo{};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        renderingInfo.colorAttachmentCount = static_cast<uint32_t>(configInfo.colorAttachments.size());
+        renderingInfo.pColorAttachmentFormats = configInfo.colorAttachments.data();
+        renderingInfo.depthAttachmentFormat = configInfo.depthAttachment;
+
+        pipelineInfo.pNext = &renderingInfo;
+
+        pipelineInfo.layout = configInfo.pipelineLayout;
+        pipelineInfo.renderPass = nullptr;
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

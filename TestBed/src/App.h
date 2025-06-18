@@ -3,9 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "Core/Window.h"
-#include "Rendering/Renderer.h"
-#include "Rendering/WompRenderer.h"
+#include <womp/Womp.h>
 
 
 class App {

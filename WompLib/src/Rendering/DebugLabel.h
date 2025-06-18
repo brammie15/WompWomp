@@ -1,8 +1,6 @@
 #ifndef DEBUGLABEL_H
 #define DEBUGLABEL_H
 
-
-
 #include <mutex>
 #include <string>
 #include <vulkan/vulkan.h>

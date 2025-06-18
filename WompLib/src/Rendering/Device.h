@@ -1,8 +1,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <womp/Window.h>
 #include "VkBootstrap.h"
-#include "Core/Window.h"
 
 #define VMA_DEBUG_LOGGING 1             // Logs every allocation/deallocation
 #define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1 // Fills new allocations with a pattern

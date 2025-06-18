@@ -38,6 +38,7 @@ namespace womp {
     class Pipeline {
     public:
         Pipeline(Device& device, const std::string& vertPath, const std::string& fragPath, const PipelineConfigInfo& configInfo);
+        Pipeline(Device& device, const uint8_t* vertCode, size_t vertSize, const uint8_t* fragCode, size_t fragSize, const PipelineConfigInfo& configInfo);
         ~Pipeline();
 
         Pipeline(const Pipeline& other) = delete;
@@ -52,6 +53,7 @@ namespace womp {
         static std::vector<char> readFile(const std::string& filename);
 
         void CreateGraphicsPipeline(const std::string& vertPath, const std::string& fragPath, const PipelineConfigInfo& configInfo);
+        void CreateGraphicsPipeline(const unsigned char* vertCode, size_t vertSize, const unsigned char* fragCode, size_t fragSize, const PipelineConfigInfo& configInfo);
 
         void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
 

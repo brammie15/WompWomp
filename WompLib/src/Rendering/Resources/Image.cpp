@@ -1,6 +1,7 @@
 #include "Image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <filesystem>
 #include <iostream>
 
 #include "Buffer.h"
@@ -22,6 +23,14 @@ womp::Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsag
 
 womp::Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter)
     : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_format{format}, m_imageView(VK_NULL_HANDLE) {
+
+    //Check if file exists
+    if (std::filesystem::exists(filename) == false) {
+        std::cerr << "Texture file does not exist: " << filename << std::endl;
+        return;
+    }
+
+
     uint8_t* pixels = nullptr;
     VkDeviceSize imageSize{};
     int texWidth, texHeight, texChannels;

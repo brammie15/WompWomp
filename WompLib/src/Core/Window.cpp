@@ -1,4 +1,4 @@
-#include "Window.h"
+#include <womp/Window.h>
 #include <stdexcept>
 
 namespace womp {

@@ -1,13 +1,13 @@
 #ifndef WOMPRENDERER_H
 #define WOMPRENDERER_H
 
-#include "Resources/Buffer.h"
-#include "Pipeline.h"
 #include "Renderer.h"
-#include "Core/WompMath.h"
+#include "WompMath.h"
 #include "Descriptors/DescriptorPool.h"
 #include "Descriptors/DescriptorSetLayout.h"
 #include "glm/vec4.hpp"
+#include "Rendering/Pipeline.h"
+#include "Rendering/Resources/Buffer.h"
 
 namespace womp {
 

@@ -1,5 +1,4 @@
 #include "Sampler.h"
-#include "Sampler.h"
 
 #include <stdexcept>
 

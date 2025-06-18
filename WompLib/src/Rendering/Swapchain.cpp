@@ -1,7 +1,7 @@
 #include "Swapchain.h"
 #include <array>
-#include <stdexcept>
 #include <limits>
+#include <stdexcept>
 
 namespace womp {
     Swapchain::Swapchain(Device& deviceRef, VkExtent2D windowExtent, Swapchain* previous)

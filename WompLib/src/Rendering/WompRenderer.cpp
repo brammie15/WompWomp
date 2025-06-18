@@ -1,9 +1,11 @@
-#include "WompRenderer.h"
+#include <womp/WompRenderer.h>
 
 #include "DebugLabel.h"
 #include "Descriptors/DescriptorSetLayout.h"
 #include "Descriptors/DescriptorWriter.h"
 
+#include "basic_frag_spv.h"
+#include "basic_vert_spv.h"
 
 womp::WompRenderer::WompRenderer(Window& windowRef): m_framesInFlight(Swapchain::MAX_FRAMES_IN_FLIGHT) {
     m_renderer = std::make_unique<Renderer>(windowRef);
@@ -61,8 +63,10 @@ womp::WompRenderer::WompRenderer(Window& windowRef): m_framesInFlight(Swapchain:
 
     m_pipeline = std::make_unique<Pipeline>(
         deviceRef,
-        "shaders/basic.vert.spv",
-        "shaders/basic.frag.spv",
+        reinterpret_cast<const uint8_t*>(basic_vert_spv),
+        basic_vert_spv_len,
+        reinterpret_cast<const uint8_t*>(basic_frag_spv),
+        basic_frag_spv_len,
         pipelineConfig
     );
 
